@@ -7,7 +7,21 @@ from plotly.subplots import make_subplots
 import folium
 from streamlit_folium import folium_static
 import json
-from paste import restaurant_recomendation_v1
+
+# Import your ML system
+try:
+    # Try importing from paste.py file
+    from paste import RestaurantLocationML
+except ImportError:
+    # Alternative: if you renamed the file differently
+    try:
+        from restaurant_ml_system import RestaurantLocationML
+    except ImportError:
+        st.error("❌ Cannot import RestaurantLocationML class. Please ensure:")
+        st.error("1. Your ML system file is named 'paste.py' or 'restaurant_ml_system.py'")
+        st.error("2. The file contains the RestaurantLocationML class")
+        st.error("3. The file is in the same directory as this Streamlit app")
+        st.stop()
 
 # Page configuration
 st.set_page_config(
