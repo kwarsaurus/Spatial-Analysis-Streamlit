@@ -67,21 +67,30 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-@st.cache_resource
 def load_ml_system():
-    """Load ML system with caching"""
+    """Load ML system"""
     try:
         return RestaurantLocationML('final_model_updated')
+    except FileNotFoundError as e:
+        st.error("❌ **Model files not found!**")
+        st.error("Please ensure the 'final_model_updated' directory exists with all required files:")
+        st.error("- models/ (spatial_model.pkl, existing_branch_model.pkl, metadata.pkl)")
+        st.error("- scalers/ (spatial_scaler.pkl, existing_scaler.pkl)")  
+        st.error("- features/ (spatial_features.pkl, existing_features.pkl)")
+        st.error("- data/ (reference_branches.csv)")
+        return None
     except Exception as e:
-        st.error(f"Error loading ML system: {e}")
-        st.error("Please ensure 'final_model_updated' directory exists with all required files.")
+        st.error(f"❌ Error loading ML system: {e}")
         return None
 
-@st.cache_data
 def load_portfolio_data(ml_system):
-    """Load portfolio data with caching"""
+    """Load portfolio data"""
     if ml_system:
-        return ml_system.analyze_portfolio()
+        try:
+            return ml_system.analyze_portfolio()
+        except Exception as e:
+            st.error(f"Error loading portfolio data: {e}")
+            return None
     return None
 
 def create_location_map(locations, scores=None):
