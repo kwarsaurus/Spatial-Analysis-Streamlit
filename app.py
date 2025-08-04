@@ -134,10 +134,19 @@ def main():
     st.markdown('<h1 class="main-header">🍽️ Restaurant Location ML System</h1>', unsafe_allow_html=True)
     st.markdown("---")
     
-    # Load ML System
-    ml_system = load_ml_system()
+    # Initialize ML System in session state
+    if 'ml_system' not in st.session_state:
+        with st.spinner("🔄 Loading ML System..."):
+            st.session_state.ml_system = load_ml_system()
+    
+    ml_system = st.session_state.ml_system
     
     if not ml_system:
+        st.error("❌ **Cannot proceed without ML system loaded.**")
+        st.info("💡 **Quick Fix Steps:**")
+        st.info("1. Ensure 'final_model_updated' folder exists")
+        st.info("2. Check all .pkl and .csv files are present")
+        st.info("3. Verify file permissions")
         st.stop()
     
     # Sidebar Navigation
@@ -146,6 +155,15 @@ def main():
         "Choose Analysis Type",
         ["🏠 Dashboard", "📍 Location Scoring", "📊 Portfolio Analysis", "🔍 Location Comparison", "📋 Expansion Report"]
     )
+    
+    # Add refresh button in sidebar
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🔄 Refresh Data"):
+        # Clear session state to reload data
+        for key in ['ml_system', 'portfolio_data', 'portfolio_analysis']:
+            if key in st.session_state:
+                del st.session_state[key]
+        st.rerun()
     
     # Dashboard
     if page == "🏠 Dashboard":
@@ -185,7 +203,12 @@ def main():
         st.markdown("---")
         
         # Quick portfolio overview
-        portfolio_data = load_portfolio_data(ml_system)
+        if 'portfolio_data' not in st.session_state:
+            with st.spinner("Loading portfolio data..."):
+                st.session_state.portfolio_data = load_portfolio_data(ml_system)
+        
+        portfolio_data = st.session_state.portfolio_data
+        
         if portfolio_data:
             st.subheader("📈 Portfolio Quick Stats")
             
@@ -208,6 +231,8 @@ def main():
                     "Optimization Opportunities",
                     len(portfolio_data['optimization_candidates'])
                 )
+        else:
+            st.warning("⚠️ Portfolio data not available")
         
         # System capabilities
         st.subheader("🎯 System Capabilities")
@@ -267,9 +292,14 @@ def main():
             
             # Score button
             if st.button("🎯 Score Location", type="primary"):
-                with st.spinner("Analyzing location..."):
-                    result = ml_system.score_new_location(latitude, longitude, district, category)
-                    st.session_state['location_result'] = result
+                try:
+                    with st.spinner("Analyzing location..."):
+                        result = ml_system.score_new_location(latitude, longitude, district, category)
+                        st.session_state['location_result'] = result
+                        st.success("✅ Location scored successfully!")
+                except Exception as e:
+                    st.error(f"❌ Error scoring location: {str(e)}")
+                    st.info("Please check your model files and try again.")
         
         with col2:
             # Map visualization
@@ -334,9 +364,17 @@ def main():
     elif page == "📊 Portfolio Analysis":
         st.header("📊 Portfolio Analysis")
         
-        portfolio_data = load_portfolio_data(ml_system)
+        # Load portfolio data with session state
+        if 'portfolio_analysis' not in st.session_state:
+            with st.spinner("🔄 Analyzing portfolio..."):
+                st.session_state.portfolio_analysis = load_portfolio_data(ml_system)
         
-        if portfolio_data:
+        portfolio_data = st.session_state.portfolio_analysis
+        
+        if not portfolio_data:
+            st.error("❌ Unable to load portfolio data")
+            st.info("This could be due to missing reference data files.")
+            return
             # Summary metrics
             summary = portfolio_data['portfolio_summary']
             
@@ -434,9 +472,14 @@ def main():
             locations.append((lat, lng, district, category))
         
         if st.button("🔍 Compare Locations", type="primary"):
-            with st.spinner("Comparing locations..."):
-                comparison_results = ml_system.compare_locations(locations)
-                st.session_state['comparison_results'] = comparison_results
+            try:
+                with st.spinner("Comparing locations..."):
+                    comparison_results = ml_system.compare_locations(locations)
+                    st.session_state['comparison_results'] = comparison_results
+                    st.success("✅ Locations compared successfully!")
+            except Exception as e:
+                st.error(f"❌ Error comparing locations: {str(e)}")
+                st.info("Please check your model files and input data.")
         
         # Display comparison results
         if 'comparison_results' in st.session_state:
